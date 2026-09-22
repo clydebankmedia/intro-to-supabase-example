@@ -1,14 +1,9 @@
 import { useState } from "react";
+import { supabase } from "./supabaseClient";
 
 // ============================================================
-// TODO 3: Insert a row into the database
+// TODO 3 (completed): Insert a row into the database
 // ------------------------------------------------------------
-// Step 1: Import the Supabase client at the top of this file:
-//
-//     import { supabase } from "./supabaseClient";
-//
-// Step 2: Fill in handleSubmit below (see the TODO inside it).
-//
 // What this teaches: writing to Supabase. Each object you insert
 // becomes one row in the `entries` table, and each key must match
 // a column name (title, text, user_id). id and created_at are
@@ -28,27 +23,21 @@ export default function EntryForm({ user }) {
     setSaving(true);
     setErrorMessage("");
 
-    // TODO 3: Save the new entry to the `entries` table.
-    //
-    // Call:
-    //     const { error } = await supabase
-    //       .from("entries")
-    //       .insert([{ title, text, user_id: user.id }]);
-    //
-    // `user` is passed in as a prop from App.jsx, and user.id is the
-    // signed-in user's ID. The RLS policy only allows the insert if
-    // user_id matches the person who is signed in.
-    //
-    // Then handle a failure:
-    //     if (error) {
-    //       setErrorMessage(error.message);
-    //       setSaving(false);
-    //       return;
-    //     }
-    //
-    // You don't need to add the entry to the list yourself.
-    // EntryList will receive it in real time (TODO 4).
+    // TODO 3: Save the new entry. user.id comes from the `user` prop
+    // passed down by App.jsx. The RLS policy only allows the insert
+    // if user_id matches the person who is signed in.
+    const { error } = await supabase
+      .from("entries")
+      .insert([{ title, text, user_id: user.id }]);
 
+    if (error) {
+      setErrorMessage(error.message);
+      setSaving(false);
+      return;
+    }
+
+    // No need to add the entry to the list here.
+    // EntryList receives it in real time (TODO 4).
     setTitle("");
     setText("");
     setSaving(false);

@@ -1,14 +1,9 @@
 import { useEffect, useState } from "react";
+import { supabase } from "./supabaseClient";
 
 // ============================================================
-// TODO 4: Subscribe to real-time changes
+// TODO 4 (completed): Subscribe to real-time changes
 // ------------------------------------------------------------
-// Step 1: Import the Supabase client at the top of this file:
-//
-//     import { supabase } from "./supabaseClient";
-//
-// Step 2: Fill in the useEffect below (see the TODO inside it).
-//
 // What this teaches: real-time subscriptions, Supabase channels,
 // PostgreSQL change events, and cleaning up subscriptions.
 // ============================================================
@@ -17,42 +12,36 @@ export default function EntryList() {
   const [entries, setEntries] = useState([]);
 
   useEffect(() => {
-    // TODO 4: Load existing entries, then listen for new ones.
-    //
-    // 1. Fetch the entries that already exist, newest first:
-    //
-    //     async function loadEntries() {
-    //       const { data, error } = await supabase
-    //         .from("entries")
-    //         .select("*")
-    //         .order("created_at", { ascending: false });
-    //       if (error) console.error(error);
-    //       else setEntries(data);
-    //     }
-    //     loadEntries();
-    //
-    // 2. Subscribe to INSERT events on the entries table:
-    //
-    //     const channel = supabase
-    //       .channel("entries-changes")
-    //       .on(
-    //         "postgres_changes",
-    //         { event: "INSERT", schema: "public", table: "entries" },
-    //         (payload) => {
-    //           // payload.new is the row that was just inserted
-    //         }
-    //       )
-    //       .subscribe();
-    //
-    // 3. In the callback, put the new row at the TOP of the list:
-    //
-    //     setEntries((current) => [payload.new, ...current]);
-    //
-    // 4. Return a cleanup function that removes the channel:
-    //
-    //     return () => {
-    //       supabase.removeChannel(channel);
-    //     };
+    // 1. Load the entries that already exist, newest first.
+    async function loadEntries() {
+      const { data, error } = await supabase
+        .from("entries")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) console.error(error);
+      else setEntries(data);
+    }
+    loadEntries();
+
+    // 2. Listen for new rows inserted into the entries table.
+    const channel = supabase
+      .channel("entries-changes")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "entries" },
+        (payload) => {
+          // 3. payload.new is the row that was just inserted.
+          //    Put it at the top of the list.
+          setEntries((current) => [payload.new, ...current]);
+        }
+      )
+      .subscribe();
+
+    // 4. Cleanup: remove the channel when the component unmounts.
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   if (entries.length === 0) {
