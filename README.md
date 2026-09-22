@@ -1,6 +1,6 @@
 # 🐱 Cat Journal: Intro to Supabase
 
-A hands-on beginner project. You'll build a small React app where people sign in with Google and write journal entries about their cats. Entries are saved in a Supabase PostgreSQL database and show up for everyone **in real time**, with no page refresh.
+A hands-on beginner project. You'll build a small React app where people sign in with an email and password and write journal entries about their cats. Entries are saved in a Supabase PostgreSQL database and show up for everyone **in real time**, with no page refresh.
 
 Most of the app is already built. Your job is to finish **4 TODOs**, and each one teaches a core Supabase concept.
 
@@ -8,7 +8,6 @@ Most of the app is already built. Your job is to finish **4 TODOs**, and each on
 
 - [Node.js](https://nodejs.org/) 20.19+ or 22.12+ (check with `node -v`)
 - A free [Supabase](https://supabase.com/) account
-- A Google account (for setting up Google sign-in)
 
 ## Supabase setup
 
@@ -71,43 +70,38 @@ alter publication supabase_realtime add table public.entries;
 
 (You can also do this in the dashboard: open the table in **Table Editor** and turn on **Realtime**.)
 
-### 5. Enable Google sign-in
+### 5. Set up email/password sign-in
 
-Google sign-in has two halves: a Google Cloud OAuth client, and the Supabase provider settings.
+Email sign-in is turned on by default in new Supabase projects. You only need to change one setting:
 
-**In Supabase:**
+1. Go to **Authentication > Providers** (called **Sign In / Providers** in newer dashboards) and open **Email**.
+2. Make sure **Enable Email provider** is on.
+3. Turn **off** **Confirm email**, then save.
 
-1. Go to **Authentication > Providers** (called **Sign In / Providers** in newer dashboards) and open **Google**.
-2. Copy the **Callback URL** shown there. It looks like `https://<your-project-ref>.supabase.co/auth/v1/callback`.
+Why turn off confirmation? By default Supabase emails new users a link they must click before they can sign in, and Supabase's built-in email sender only allows a few emails per hour. With confirmation off, creating an account signs you in right away. (For a real app you'd leave it on and set up your own email provider.)
 
-**In Google Cloud Console:**
+### 6. Get your project URL and publishable key
 
-1. Go to [console.cloud.google.com](https://console.cloud.google.com/) and create (or pick) a project.
-2. Set up the **OAuth consent screen** (External is fine for testing; add your own email as a test user).
-3. Go to **APIs & Services > Credentials > Create credentials > OAuth client ID**.
-4. Choose **Web application**.
-5. Under **Authorized redirect URIs**, paste the Supabase Callback URL from above.
-6. Click **Create** and copy the **Client ID** and **Client Secret**.
+1. **Project URL:** go to **Project Settings > Data API** (or click **Connect** at the top of the dashboard). It looks like `https://<your-project-ref>.supabase.co`.
+2. **Publishable key:** go to **Project Settings > API Keys** and copy the **default** publishable key. It starts with `sb_publishable_`.
+   - Older projects may only show a legacy **anon** key (a long string starting with `eyJ`). That works in the same place.
+   - **Never** use a **secret** key (`sb_secret_...`) or the legacy `service_role` key in a frontend app. Those skip RLS entirely.
+3. Make your own `.env` file by copying the example:
 
-**Back in Supabase:**
+```bash
+cp .env.example .env
+```
 
-1. Paste the Client ID and Client Secret into the Google provider settings, turn it **on**, and save.
-2. Go to **Authentication > URL Configuration** and set **Site URL** to `http://localhost:5173`. This is where users are sent back after signing in.
-
-### 6. Get your project URL and anon key
-
-1. Go to **Settings > API** (called **Project Settings > API Keys** in newer dashboards).
-2. Copy your **Project URL** and your **anon / public** key.
-   - Newer projects may show a **publishable** key (`sb_publishable_...`) instead. That works in the same place.
-   - **Never** use the `service_role` / secret key in a frontend app.
-3. Open the `.env` file in this project and fill them in:
+4. Open `.env` and fill in your values:
 
 ```
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key-here
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your-key-here
 ```
 
-The anon key is meant to be public. RLS (step 3) is what actually protects your data.
+The publishable key is meant to be public, since it ends up in the browser anyway. RLS (step 3) is what actually protects your data.
+
+`.env` is listed in `.gitignore`, so it never gets committed. `.env.example` is committed so everyone knows which variables to set. Even though the publishable key isn't secret, keeping config out of git is a good habit. Real projects usually have secret keys in there too.
 
 ## Install and run
 
@@ -118,7 +112,7 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173).
 
-At first you'll see a **Sign in with Google** button that does nothing. That's expected! Work through the TODOs in order. After each one, save the file and the browser updates automatically.
+At first you'll see a sign-in form whose buttons do nothing. That's expected! Work through the TODOs in order. After each one, save the file and the browser updates automatically.
 
 > If you change `.env`, stop the dev server (Ctrl+C) and run `npm run dev` again. Vite only reads `.env` on startup.
 
@@ -128,7 +122,7 @@ At first you'll see a **Sign in with Google** button that does nothing. That's e
 src/
   supabaseClient.js  // Creates the Supabase client (done for you)
   App.jsx            // Main component, tracks who is signed in   (TODO 2)
-  Login.jsx          // Google sign-in button                     (TODO 1)
+  Login.jsx          // Email/password sign-in form               (TODO 1)
   EntryForm.jsx      // Form to add a new journal entry           (TODO 3)
   EntryList.jsx      // Shows all entries in real time            (TODO 4)
   main.jsx           // Entry point
@@ -139,13 +133,16 @@ src/
 
 Each TODO has detailed comments in its file, including the exact code to write.
 
-### TODO 1: Sign in with Google (`Login.jsx`)
+### TODO 1: Sign up and sign in with email + password (`Login.jsx`)
 
-Import `supabase` and call `supabase.auth.signInWithOAuth({ provider: "google" })` when the button is clicked.
+Import `supabase`, then:
 
-**What it teaches:** Supabase Authentication and OAuth providers. Supabase handles the redirect to Google and back, and stores the session in the browser for you.
+- In `handleSignUp`, call `supabase.auth.signUp({ email, password })`.
+- In `handleSignIn`, call `supabase.auth.signInWithPassword({ email, password })`.
 
-**Check it:** clicking the button takes you to Google. After you sign in you land back on the app, but it still shows the sign-in button. That's because the app isn't listening for the login yet, which is TODO 2.
+**What it teaches:** Supabase Authentication. Supabase stores your users, checks passwords, and keeps the session in the browser for you.
+
+**Check it:** create an account, then look in **Authentication > Users** in Supabase and find your new user. The app still shows the sign-in form. That's because it isn't listening for the login yet, which is TODO 2.
 
 ### TODO 2: Listen for auth state changes (`App.jsx`)
 
@@ -178,8 +175,9 @@ Import `supabase` and, inside the `useEffect`:
 
 ## Troubleshooting
 
-- **Blank page or "supabaseUrl is required"**: `.env` isn't filled in, or you didn't restart `npm run dev` after editing it.
-- **Google says `redirect_uri_mismatch`**: the redirect URI in Google Cloud must exactly match the Supabase Callback URL.
-- **After Google sign-in you land on the wrong URL**: check **Site URL** in Authentication > URL Configuration.
+- **Blank page or "supabaseUrl is required"**: `.env` is missing (did you copy `.env.example`?), isn't filled in, or you didn't restart `npm run dev` after editing it.
+- **"Email not confirmed" when signing in**: turn off **Confirm email** (setup step 5), then delete that user in **Authentication > Users** and sign up again.
+- **"Email rate limit exceeded"**: Supabase's built-in email sender is limited. Turn off **Confirm email** so no emails are sent.
+- **"Password should be at least 6 characters"**: that's Supabase's default minimum password length.
 - **Insert fails with "new row violates row-level security policy"**: `user_id` doesn't match the signed-in user, or the insert policy is missing.
 - **Entries save but don't appear live**: Realtime isn't enabled on the table (step 4), or the select policy is missing. Realtime respects RLS too.

@@ -45,7 +45,24 @@ body {
 }
 
 .login {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   text-align: center;
+}
+
+.login p {
+  margin: 0;
+}
+
+.login-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.login-buttons button.secondary {
+  padding: 10px 16px;
 }
 
 .entry-form {

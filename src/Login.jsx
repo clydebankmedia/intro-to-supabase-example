@@ -1,35 +1,77 @@
+import { useState } from "react";
+
 // ============================================================
-// TODO 1: Sign in with Google
+// TODO 1: Sign up and sign in with email + password
 // ------------------------------------------------------------
 // Step 1: Import the Supabase client at the top of this file:
 //
 //     import { supabase } from "./supabaseClient";
 //
-// Step 2: Fill in handleLogin below (see the TODO inside it).
+// Step 2: Fill in handleSignUp and handleSignIn below
+//         (see the TODOs inside them).
 //
-// What this teaches: Supabase Authentication and OAuth providers.
-// Supabase sends the user to Google, Google sends them back to
-// your app, and Supabase stores the logged-in session for you.
+// What this teaches: Supabase Authentication. Supabase stores
+// users (in auth.users), checks passwords, and keeps the
+// logged-in session in the browser for you.
 // ============================================================
 
 export default function Login() {
-  async function handleLogin() {
-    // TODO 1: Start the Google sign-in flow.
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  async function handleSignUp() {
+    setErrorMessage("");
+
+    // TODO 1a: Create a new account.
     //
     // Call:
-    //     await supabase.auth.signInWithOAuth({ provider: "google" });
+    //     const { error } = await supabase.auth.signUp({ email, password });
     //
-    // This redirects the browser to Google. After the user signs in,
-    // they come back to this app already logged in.
+    // If something went wrong (e.g. password too short), show it:
+    //     if (error) setErrorMessage(error.message);
     //
-    // Bonus: the call returns { error }. If error is set, log it with
-    // console.error(error) so you can see what went wrong.
+    // With "Confirm email" turned off in Supabase (see README), a
+    // successful sign-up also signs the user in right away.
+  }
+
+  async function handleSignIn(event) {
+    event.preventDefault(); // stop the page from reloading
+    setErrorMessage("");
+
+    // TODO 1b: Sign in to an existing account.
+    //
+    // Call:
+    //     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    //
+    // If the email or password is wrong, show it:
+    //     if (error) setErrorMessage(error.message);
   }
 
   return (
-    <div className="card login">
+    <form className="card login" onSubmit={handleSignIn}>
       <p>Sign in to start writing about your cats.</p>
-      <button onClick={handleLogin}>Sign in with Google</button>
-    </div>
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+      />
+      <input
+        type="password"
+        placeholder="Password (at least 6 characters)"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+      />
+      {errorMessage && <p className="error">{errorMessage}</p>}
+      <div className="login-buttons">
+        <button type="submit">Sign in</button>
+        <button type="button" className="secondary" onClick={handleSignUp}>
+          Create account
+        </button>
+      </div>
+    </form>
   );
 }
